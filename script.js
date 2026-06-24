@@ -2,26 +2,28 @@ const body = document.body;
 const fechar = document.querySelector(".fechar");
 const verCarrinho = document.querySelector(".icone-cart");
 const btnAddCart = document.querySelectorAll(".add-cart");
+const listaProdutos = document.querySelector(".lista-itens");
+const contadorCart = document.querySelector(".icone-cart span");
 
 const carrinho = [];
+
+// Abrir e fechar carrinho
 verCarrinho.addEventListener("click", function () {
   body.classList.toggle("show-cart");
 });
+
 fechar.addEventListener("click", function () {
   body.classList.remove("show-cart");
 });
+
+// Adicionar produtos
 btnAddCart.forEach(function (botao) {
   botao.addEventListener("click", function () {
     const item = botao.closest(".item");
-    console.log(item);
 
     const nome = item.querySelector("h2").textContent;
     const preco = item.querySelector(".preço").textContent;
     const imagem = item.querySelector("img").src;
-
-    console.log(nome);
-    console.log(preco);
-    console.log(imagem);
 
     const produto = {
       nome,
@@ -40,6 +42,56 @@ btnAddCart.forEach(function (botao) {
       carrinho.push(produto);
     }
 
-    console.log(carrinho);
+    atualizarCarrinho();
   });
 });
+
+// Atualizar interface
+function atualizarCarrinho() {
+  listaProdutos.innerHTML = "";
+
+  carrinho.forEach(function (produto, index) {
+    const html = `
+      <div class="produtos">
+        <div class="nome">
+          <h2>${produto.nome}</h2>
+        </div>
+
+        <div class="preco">
+          ${produto.preco}
+        </div>
+
+        <div class="quantidade">
+          <span class="minus" data-index="${index}">-</span>
+          <span>${produto.quantidade}</span>
+          <span class="plus" data-index="${index}">+</span>
+        </div>
+      </div>
+    `;
+
+    listaProdutos.innerHTML += html;
+  });
+
+  const botoesPlus = document.querySelectorAll(".plus");
+  const botoesMinus = document.querySelectorAll(".minus");
+
+  botoesPlus.forEach(function (botao) {
+    botao.addEventListener("click", function () {
+      console.log("+ clicado");
+    });
+  });
+
+  botoesMinus.forEach(function (botao) {
+    botao.addEventListener("click", function () {
+      console.log("- clicado");
+    });
+  });
+
+  let totalItens = 0;
+
+  carrinho.forEach(function (produto) {
+    totalItens += produto.quantidade;
+  });
+
+  contadorCart.textContent = totalItens;
+}
