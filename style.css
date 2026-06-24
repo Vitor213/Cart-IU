@@ -19,6 +19,8 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 20px 0;
+  margin-bottom: 5px;
+  border-bottom: 3px solid #e8bc0e;
 }
 header .icone-cart {
   position: relative;
@@ -41,9 +43,13 @@ header .icone-cart span {
   filter: drop-shadow(0 50px 20px #0009);
   border-radius: 30px;
 }
+.lista-produtos .item img:hover {
+  transform: scale(1.1);
+  transition: transform 1s ease;
+}
 .lista-produtos {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 .lista-produtos .item {
@@ -67,6 +73,10 @@ header .icone-cart span {
   margin-top: 20px;
   cursor: pointer;
   border: none;
+}
+.lista-produtos .item button:hover {
+  background-color: #e8bc0e;
+  color: #353432;
 }
 .carrinho-compras {
   width: 400px;
@@ -109,8 +119,9 @@ header .icone-cart span {
 }
 .carrinho-compras .lista-itens .produtos {
   display: grid;
-  grid-template-columns: 70px 150px 50px 1fr;
-  gap: 10px;
+  grid-template-columns: 70px 140px 50px 1fr;
+  margin-bottom: 15px;
+  gap: 15px;
   text-align: center;
   align-items: center;
 }
@@ -123,7 +134,7 @@ header .icone-cart span {
   border-radius: 50%;
   cursor: pointer;
 }
-.carrinho-compras .item:nth-child(even) {
+.carrinho-compras .lista-itens .produtos:nth-child(even) {
   background-color: #eee1;
 }
 .carrinho-compras {
