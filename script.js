@@ -53,10 +53,12 @@ function atualizarCarrinho() {
   carrinho.forEach(function (produto, index) {
     const html = `
       <div class="produtos">
+      <div class="imagem">
+      <img src="${produto.imagem}">
+        </div>
         <div class="nome">
           <h2>${produto.nome}</h2>
         </div>
-
         <div class="preco">
           ${produto.preco}
         </div>
@@ -77,13 +79,24 @@ function atualizarCarrinho() {
 
   botoesPlus.forEach(function (botao) {
     botao.addEventListener("click", function () {
-      console.log("+ clicado");
+      const index = botao.dataset.index;
+
+      carrinho[index].quantidade++;
+
+      atualizarCarrinho();
     });
   });
 
   botoesMinus.forEach(function (botao) {
     botao.addEventListener("click", function () {
-      console.log("- clicado");
+      const index = botao.dataset.index;
+      if (carrinho[index].quantidade > 1) {
+        carrinho[index].quantidade--;
+      } else {
+        carrinho.splice(index, 1);
+      }
+
+      atualizarCarrinho();
     });
   });
 
