@@ -15,6 +15,34 @@ if (btnFinalizar) {
 
 let carrinho = [];
 
+// ==================== CATÁLOGO DE PRODUTOS ====================
+const produtos = [
+  {
+    id: 1,
+    nome: "Camiseta Estampada",
+    preco: 49.9,
+    imagem: "img/camisa01.webp",
+  },
+  {
+    id: 2,
+    nome: "Camiseta Preta Básica",
+    preco: 39.9,
+    imagem: "img/camisa02.webp",
+  },
+  {
+    id: 3,
+    nome: "Camiseta Branca",
+    preco: 44.9,
+    imagem: "img/camisa03.webp",
+  },
+  {
+    id: 4,
+    nome: "Camiseta Oversized",
+    preco: 59.9,
+    imagem: "img/camisa04.webp",
+  },
+];
+
 function carregarCarrinho() {
   const carrinhoSalvo = localStorage.getItem("carrinho");
   if (carrinhoSalvo) {
@@ -67,6 +95,33 @@ btnAddCart.forEach(function (botao) {
     salvarCarrinho();
   });
 });
+function renderizarCatalogo() {
+  const container = document.querySelector(".lista-produtos");
+
+  if (!container) {
+    console.error("Container .lista-produtos não encontrado!");
+    return;
+  }
+
+  container.innerHTML = ""; // limpa os produtos estáticos
+
+  produtos.forEach((produto) => {
+    const html = `
+      <div class="item" data-id="${produto.id}">
+        <img src="${produto.imagem}" alt="${produto.nome}">
+        <div class="descricao">
+          <h2>${produto.nome}</h2>
+          <p class="preço" data-preco="${produto.preco}">R$ ${produto.preco.toFixed(2)}</p>
+          <button class="add-cart">Adicionar ao carrinho</button>
+        </div>
+      </div>
+    `;
+    container.innerHTML += html;
+  });
+
+  // Reatribui os eventos nos novos botões "Adicionar"
+  adicionarEventosBotoesAdd();
+}
 
 // Atualizar interface
 function atualizarCarrinho() {
@@ -197,4 +252,34 @@ function removerItem(index) {
     atualizarCarrinho();
   }
 }
+function adicionarEventosBotoesAdd() {
+  const btns = document.querySelectorAll(".add-cart");
+
+  btns.forEach((botao) => {
+    // Remove listener antigo se existir
+    botao.removeEventListener("click", handleAddToCart);
+    botao.addEventListener("click", handleAddToCart);
+  });
+}
+
+function handleAddToCart(e) {
+  const item = e.target.closest(".item");
+  const nome = item.querySelector("h2").textContent;
+  const preco = Number(item.querySelector(".preço").dataset.preco);
+  const imagem = item.querySelector("img").src;
+
+  const produto = { nome, preco, imagem, quantidade: 1 };
+
+  const produtoExistente = carrinho.find((p) => p.nome === nome);
+
+  if (produtoExistente) {
+    produtoExistente.quantidade++;
+  } else {
+    carrinho.push(produto);
+  }
+
+  atualizarCarrinho();
+  salvarCarrinho();
+}
 atualizarCarrinho();
+renderizarCatalogo();
