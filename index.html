@@ -25,7 +25,7 @@
                 <img src="img/camisa01.webp" alt="Camiseta 1">
                 <div class="descricao">
                     <h2>Camiseta Estampada</h2>
-                    <p class="preço">R$ 49,90</p>
+                    <p class="preço" data-preco="49.90">R$ 49,90</p>
                     <button class="add-cart">Adicionar ao carrinho</button>
 
                 </div>
@@ -53,8 +53,16 @@
                     <span class="plus">+</span>
                 </div>
             </div>
-
             <!-- outros produtos viriam aqui... -->
+        </div>
+        <div id="carrinho-vazio" class="carrinho-vazio">
+            <p>Seu carrinho está vazio 😔</p>
+            <p>Adicione alguns produtos!</p>
+        </div>
+        <div class="total-container">
+            <button id="limpar-carrinho" class="btn-limpar">🗑 Limpar Carrinho</button>
+            <strong>Valor Total:</strong>
+            <span id="total-geral" class="total">R$ 0,00</span>
         </div>
 
         <!-- Botões fora da lista de produtos -->
