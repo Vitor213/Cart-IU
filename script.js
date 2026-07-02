@@ -3,8 +3,12 @@ const fechar = document.querySelector(".fechar");
 const verCarrinho = document.querySelector(".icone-cart");
 const btnAddCart = document.querySelectorAll(".add-cart");
 const listaProdutos = document.querySelector(".lista-itens");
-const contadorCart = document.querySelector(".icone-cart span");
+const contadorCart =
+  document.querySelector(".icone-cart span") ||
+  document.getElementById("cart-count");
 const btnLimpar = document.getElementById("limpar-carrinho");
+const catalogLoader = document.getElementById("catalog-loader");
+const toastContainer = document.getElementById("toast-container");
 if (btnLimpar) {
   btnLimpar.addEventListener("click", limparCarrinho);
 }
@@ -58,6 +62,11 @@ carregarCarrinho();
 // Abrir e fechar carrinho
 verCarrinho.addEventListener("click", function () {
   body.classList.toggle("show-cart");
+  // smooth scroll para início do carrinho
+  setTimeout(() => {
+    const pane = document.querySelector(".lista-itens");
+    if (pane) pane.scrollTo({ top: 0, behavior: "smooth" });
+  }, 200);
 });
 
 fechar.addEventListener("click", function () {
@@ -231,7 +240,6 @@ function adicionarEventosBotoesAdd() {
     botao.addEventListener("click", handleAddToCart);
   });
 }
-
 function handleAddToCart(e) {
   const item = e.target.closest(".item");
   if (!item) return;
@@ -242,27 +250,51 @@ function handleAddToCart(e) {
   const imagem = item.querySelector("img").src;
 
   const produto = {
+    id: Number(item.dataset.id) || Date.now(),
     nome,
     preco,
     imagem,
-    quantidade: 1,
   };
 
-  const produtoExistente = carrinho.find((p) => p.nome === nome);
+  // animação visual para o usuário
+  animateAddToCart(item.querySelector("img"));
 
-  if (produtoExistente) {
-    produtoExistente.quantidade++;
-  } else {
-    carrinho.push(produto);
-  }
+  addToCartWithToast(produto);
+}
 
-  atualizarCarrinho();
-  salvarCarrinho();
+// animação que clona a imagem e move até o ícone do carrinho
+function animateAddToCart(imgEl) {
+  if (!imgEl) return;
+  const clone = imgEl.cloneNode(true);
+  const rect = imgEl.getBoundingClientRect();
+  clone.style.position = "fixed";
+  clone.style.left = rect.left + "px";
+  clone.style.top = rect.top + "px";
+  clone.style.width = rect.width + "px";
+  clone.style.height = rect.height + "px";
+  clone.style.transition = "all .6s cubic-bezier(.2,.8,.2,1)";
+  clone.style.zIndex = 1200;
+  clone.style.borderRadius = "8px";
+  document.body.appendChild(clone);
+  const cartIcon = document.querySelector(".icone-cart");
+  const dest = cartIcon.getBoundingClientRect();
+  requestAnimationFrame(() => {
+    clone.style.left = dest.left + dest.width / 2 - rect.width / 4 + "px";
+    clone.style.top = dest.top + dest.height / 2 - rect.height / 4 + "px";
+    clone.style.transform = "scale(.25)";
+    clone.style.opacity = "0.8";
+  });
+  setTimeout(() => clone.remove(), 700);
 }
 // ==================== CONSUMO DE API ====================
 async function loadProducts() {
   try {
-    const response = await fetch("https://fakestoreapi.com/products?limit=5");
+    // show loader
+    if (catalogLoader) {
+      catalogLoader.hidden = false;
+      catalogLoader.setAttribute("aria-hidden", "false");
+    }
+    const response = await fetch("https://fakestoreapi.com/products?limit=8");
     const data = await response.json();
 
     // Atualiza o array de produtos com dados da API
@@ -271,7 +303,7 @@ async function loadProducts() {
     data.forEach((item) => {
       produtos.push({
         id: item.id,
-        nome: item.title.substring(0, 30),
+        nome: item.title.substring(0, 40),
         preco: item.price,
         imagem: item.image,
       });
@@ -281,6 +313,11 @@ async function loadProducts() {
   } catch (error) {
     console.error("Erro ao carregar da API:", error);
     renderizarCatalogo(); // fallback
+  } finally {
+    if (catalogLoader) {
+      catalogLoader.hidden = true;
+      catalogLoader.setAttribute("aria-hidden", "true");
+    }
   }
 }
 // ==================== BUSCA ====================
@@ -298,22 +335,26 @@ function setupSearch() {
   const catalogContainer = document.querySelector(".lista-produtos");
   catalogContainer.parentNode.insertBefore(searchInput, catalogContainer);
 
-  searchInput.addEventListener("input", (e) => {
-    const term = e.target.value.toLowerCase().trim();
+  // busca com debounce para melhor UX
+  const debounce = (fn, delay = 300) => {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  };
 
+  const doSearch = (e) => {
+    const term = e.target.value.toLowerCase().trim();
     const filtered = produtos.filter((product) =>
       product.nome.toLowerCase().includes(term),
     );
-
-    // Renderiza apenas os filtrados
     const container = document.querySelector(".lista-produtos");
     container.innerHTML = "";
-
     if (filtered.length === 0) {
       container.innerHTML = "<p>Nenhum produto encontrado.</p>";
       return;
     }
-
     filtered.forEach((product) => {
       const html = `
         <div class="item" data-id="${product.id}">
@@ -327,7 +368,11 @@ function setupSearch() {
       `;
       container.innerHTML += html;
     });
-  });
+    // reattach events
+    adicionarEventosBotoesAdd();
+  };
+
+  searchInput.addEventListener("input", debounce(doSearch, 350));
 }
 
 // ==================== FILTRO E ORDENAÇÃO ====================
@@ -389,6 +434,8 @@ function setupFilters() {
       `;
       container.innerHTML += html;
     });
+    // reattach events after rendering
+    adicionarEventosBotoesAdd();
   }
 
   priceFilter.addEventListener("change", applyFilters);
@@ -397,34 +444,28 @@ function setupFilters() {
 // ==================== MODAL DE DETALHES ====================
 function showProductModal(product) {
   const modal = document.createElement("div");
-  modal.style.position = "fixed";
-  modal.style.top = "0";
-  modal.style.left = "0";
-  modal.style.width = "100%";
-  modal.style.height = "100%";
-  modal.style.background = "rgba(0,0,0,0.8)";
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-  modal.style.zIndex = "1000";
-
+  modal.className = "product-modal";
   modal.innerHTML = `
-    <div style="background:white; padding:20px; border-radius:12px; max-width:400px; text-align:center;">
-      <img src="${product.imagem}" style="width:100%; border-radius:12px;">
+    <div class="card">
+      <img src="${product.imagem}" alt="${product.nome}" style="width:100%;border-radius:8px;margin-bottom:12px">
       <h2>${product.nome}</h2>
-      <p style="font-size:1.5rem; color:#e74c3c;">R$ ${product.preco.toFixed(2)}</p>
-      <button class="add-cart-modal" style="background:#222; color:white; padding:12px 30px; border:none; border-radius:50px; margin:15px 0;">Adicionar ao Carrinho</button>
-      <button onclick="this.parentElement.parentElement.remove()" style="background:#ddd; padding:8px 20px; border:none; border-radius:50px;">Fechar</button>
+      <p style="font-size:1.25rem;color:var(--danger);">R$ ${product.preco.toFixed(2)}</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="add-cart-modal" style="background:#071022;color:#fff;padding:10px 18px;border-radius:999px;border:none">Adicionar ao Carrinho</button>
+        <button class="close-modal" style="background:#eee;padding:10px 18px;border-radius:999px;border:none">Fechar</button>
+      </div>
     </div>
   `;
-
   document.body.appendChild(modal);
-
+  modal
+    .querySelector(".close-modal")
+    .addEventListener("click", () => modal.remove());
   modal.querySelector(".add-cart-modal").addEventListener("click", () => {
     const existing = carrinho.find((p) => p.nome === product.nome);
     if (existing) existing.quantidade++;
     else carrinho.push({ ...product, quantidade: 1 });
     atualizarCarrinho();
+    showToast(`${product.nome} adicionado ao carrinho!`);
     modal.remove();
   });
 }
@@ -441,24 +482,17 @@ document.querySelector(".lista-produtos").addEventListener("click", (e) => {
 // ==================== TOAST (notificação) ====================
 function showToast(message) {
   const toast = document.createElement("div");
-  toast.style.position = "fixed";
-  toast.style.bottom = "20px";
-  toast.style.left = "50%";
-  toast.style.transform = "translateX(-50%)";
-  toast.style.background = "#27ae60";
-  toast.style.color = "white";
-  toast.style.padding = "12px 25px";
-  toast.style.borderRadius = "50px";
-  toast.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
-  toast.style.zIndex = "2000";
-  toast.style.opacity = "0";
-  toast.style.transition = "all 0.3s";
+  toast.className = "toast";
   toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => (toast.style.opacity = "1"), 10);
+  if (toastContainer) {
+    toastContainer.appendChild(toast);
+  } else {
+    document.body.appendChild(toast);
+  }
+  // force reflow then show
+  requestAnimationFrame(() => toast.classList.add("show"));
   setTimeout(() => {
-    toast.style.opacity = "0";
+    toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
   }, 2500);
 }

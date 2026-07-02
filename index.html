@@ -4,12 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Loja de camisetas - catálago, filtro e carrinho de compras">
     <title>T-shirts and more</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./estilo/style.css">
 </head>
 
 <body class="show-cart">
     <div class="container">
+                <!-- Loader do catálogo -->
+                <div id="catalog-loader" class="catalog-loader" aria-hidden="true" hidden>
+                    <div class="loader-dot"></div>
+                    <div class="loader-dot"></div>
+                    <div class="loader-dot"></div>
+                </div>
         <header>
             <div class="titulo">Lista de produtos</div>
             <div class="icone-cart">
@@ -17,7 +27,7 @@
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M5 4h1.5L9 16m0 0h8m-8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8.5-3h9.25L19 7H7.312" />
                 </svg>
-                <span>0</span>
+                <span id="cart-count">0</span>
             </div>
         </header>
         <div class="lista-produtos">
@@ -33,6 +43,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast container (aria-live para acessibilidade) -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <div class="carrinho-compras">
         <div class="carrinho-header">
