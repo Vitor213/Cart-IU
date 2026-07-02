@@ -64,37 +64,6 @@ fechar.addEventListener("click", function () {
   body.classList.remove("show-cart");
 });
 
-// Adicionar produtos
-btnAddCart.forEach(function (botao) {
-  botao.addEventListener("click", function () {
-    const item = botao.closest(".item");
-
-    const nome = item.querySelector("h2").textContent;
-    const preco = Number(item.querySelector(".preço").dataset.preco);
-    const imagem = item.querySelector("img").src;
-
-    const produto = {
-      nome,
-      preco,
-      imagem,
-      quantidade: 1,
-    };
-    console.log(produto);
-
-    const produtoExistente = carrinho.find(function (item) {
-      return item.nome === nome;
-    });
-
-    if (produtoExistente) {
-      produtoExistente.quantidade++;
-    } else {
-      carrinho.push(produto);
-    }
-
-    atualizarCarrinho();
-    salvarCarrinho();
-  });
-});
 listaProdutos.addEventListener("click", function (e) {
   const target = e.target;
 
@@ -128,7 +97,6 @@ listaProdutos.addEventListener("click", function (e) {
 });
 function renderizarCatalogo() {
   const container = document.querySelector(".lista-produtos");
-
   if (!container) {
     console.error("Container .lista-produtos não encontrado!");
     return;
@@ -266,11 +234,19 @@ function adicionarEventosBotoesAdd() {
 
 function handleAddToCart(e) {
   const item = e.target.closest(".item");
-  const nome = item.querySelector("h2").textContent;
-  const preco = Number(item.querySelector(".preço").dataset.preco);
+  if (!item) return;
+
+  const nome = item.querySelector("h2").textContent.trim();
+  const precoEl = item.querySelector(".preço");
+  const preco = precoEl ? Number(precoEl.dataset.preco) : 0;
   const imagem = item.querySelector("img").src;
 
-  const produto = { nome, preco, imagem, quantidade: 1 };
+  const produto = {
+    nome,
+    preco,
+    imagem,
+    quantidade: 1,
+  };
 
   const produtoExistente = carrinho.find((p) => p.nome === nome);
 
@@ -283,5 +259,221 @@ function handleAddToCart(e) {
   atualizarCarrinho();
   salvarCarrinho();
 }
+// ==================== CONSUMO DE API ====================
+async function loadProducts() {
+  try {
+    const response = await fetch("https://fakestoreapi.com/products?limit=5");
+    const data = await response.json();
+
+    // Atualiza o array de produtos com dados da API
+    produtos.length = 0; // limpa o array atual
+
+    data.forEach((item) => {
+      produtos.push({
+        id: item.id,
+        nome: item.title.substring(0, 30),
+        preco: item.price,
+        imagem: item.image,
+      });
+    });
+
+    renderizarCatalogo(); // re-renderiza com novos produtos
+  } catch (error) {
+    console.error("Erro ao carregar da API:", error);
+    renderizarCatalogo(); // fallback
+  }
+}
+// ==================== BUSCA ====================
+function setupSearch() {
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.placeholder = "Buscar produtos...";
+  searchInput.style.marginBottom = "20px";
+  searchInput.style.padding = "10px";
+  searchInput.style.width = "100%";
+  searchInput.style.borderRadius = "8px";
+  searchInput.style.border = "1px solid #ddd";
+
+  // Insere o input antes do catálogo
+  const catalogContainer = document.querySelector(".lista-produtos");
+  catalogContainer.parentNode.insertBefore(searchInput, catalogContainer);
+
+  searchInput.addEventListener("input", (e) => {
+    const term = e.target.value.toLowerCase().trim();
+
+    const filtered = produtos.filter((product) =>
+      product.nome.toLowerCase().includes(term),
+    );
+
+    // Renderiza apenas os filtrados
+    const container = document.querySelector(".lista-produtos");
+    container.innerHTML = "";
+
+    if (filtered.length === 0) {
+      container.innerHTML = "<p>Nenhum produto encontrado.</p>";
+      return;
+    }
+
+    filtered.forEach((product) => {
+      const html = `
+        <div class="item" data-id="${product.id}">
+          <img src="${product.imagem}" alt="${product.nome}">
+          <div class="descricao">
+            <h2>${product.nome}</h2>
+            <p class="preço" data-preco="${product.preco}">R$ ${product.preco.toFixed(2)}</p>
+            <button class="add-cart">Adicionar ao carrinho</button>
+          </div>
+        </div>
+      `;
+      container.innerHTML += html;
+    });
+  });
+}
+
+// ==================== FILTRO E ORDENAÇÃO ====================
+function setupFilters() {
+  const filterContainer = document.createElement("div");
+  filterContainer.style.marginBottom = "20px";
+  filterContainer.innerHTML = `
+    <select id="price-filter">
+      <option value="all">Todos os preços</option>
+      <option value="low">Até R$ 50</option>
+      <option value="medium">R$ 50 - R$ 80</option>
+      <option value="high">Acima de R$ 80</option>
+    </select>
+    <select id="sort-filter">
+      <option value="default">Ordenar por</option>
+      <option value="price-low">Menor preço</option>
+      <option value="price-high">Maior preço</option>
+      <option value="name">Nome (A-Z)</option>
+    </select>
+  `;
+
+  const catalog = document.querySelector(".lista-produtos");
+  catalog.parentNode.insertBefore(filterContainer, catalog);
+
+  const priceFilter = document.getElementById("price-filter");
+  const sortFilter = document.getElementById("sort-filter");
+
+  function applyFilters() {
+    let filtered = [...produtos];
+
+    // Filtro de preço
+    const priceValue = priceFilter.value;
+    if (priceValue === "low") filtered = filtered.filter((p) => p.preco <= 50);
+    if (priceValue === "medium")
+      filtered = filtered.filter((p) => p.preco > 50 && p.preco <= 80);
+    if (priceValue === "high") filtered = filtered.filter((p) => p.preco > 80);
+
+    // Ordenação
+    const sortValue = sortFilter.value;
+    if (sortValue === "price-low") filtered.sort((a, b) => a.preco - b.preco);
+    if (sortValue === "price-high") filtered.sort((a, b) => b.preco - a.preco);
+    if (sortValue === "name")
+      filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+
+    // Render
+    const container = document.querySelector(".lista-produtos");
+    container.innerHTML = "";
+
+    filtered.forEach((product) => {
+      const html = `
+        <div class="item" data-id="${product.id}">
+          <img src="${product.imagem}" alt="${product.nome}">
+          <div class="descricao">
+            <h2>${product.nome}</h2>
+            <p class="preço" data-preco="${product.preco}">R$ ${product.preco.toFixed(2)}</p>
+            <button class="add-cart">Adicionar ao carrinho</button>
+          </div>
+        </div>
+      `;
+      container.innerHTML += html;
+    });
+  }
+
+  priceFilter.addEventListener("change", applyFilters);
+  sortFilter.addEventListener("change", applyFilters);
+}
+// ==================== MODAL DE DETALHES ====================
+function showProductModal(product) {
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.top = "0";
+  modal.style.left = "0";
+  modal.style.width = "100%";
+  modal.style.height = "100%";
+  modal.style.background = "rgba(0,0,0,0.8)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = "1000";
+
+  modal.innerHTML = `
+    <div style="background:white; padding:20px; border-radius:12px; max-width:400px; text-align:center;">
+      <img src="${product.imagem}" style="width:100%; border-radius:12px;">
+      <h2>${product.nome}</h2>
+      <p style="font-size:1.5rem; color:#e74c3c;">R$ ${product.preco.toFixed(2)}</p>
+      <button class="add-cart-modal" style="background:#222; color:white; padding:12px 30px; border:none; border-radius:50px; margin:15px 0;">Adicionar ao Carrinho</button>
+      <button onclick="this.parentElement.parentElement.remove()" style="background:#ddd; padding:8px 20px; border:none; border-radius:50px;">Fechar</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector(".add-cart-modal").addEventListener("click", () => {
+    const existing = carrinho.find((p) => p.nome === product.nome);
+    if (existing) existing.quantidade++;
+    else carrinho.push({ ...product, quantidade: 1 });
+    atualizarCarrinho();
+    modal.remove();
+  });
+}
+
+// Clique na imagem ou nome para abrir modal
+document.querySelector(".lista-produtos").addEventListener("click", (e) => {
+  if (e.target.tagName === "IMG" || e.target.tagName === "H2") {
+    const item = e.target.closest(".item");
+    const productId = parseInt(item.dataset.id);
+    const product = produtos.find((p) => p.id === productId);
+    if (product) showProductModal(product);
+  }
+});
+// ==================== TOAST (notificação) ====================
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.style.position = "fixed";
+  toast.style.bottom = "20px";
+  toast.style.left = "50%";
+  toast.style.transform = "translateX(-50%)";
+  toast.style.background = "#27ae60";
+  toast.style.color = "white";
+  toast.style.padding = "12px 25px";
+  toast.style.borderRadius = "50px";
+  toast.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+  toast.style.zIndex = "2000";
+  toast.style.opacity = "0";
+  toast.style.transition = "all 0.3s";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => (toast.style.opacity = "1"), 10);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// Atualize a função de adicionar (no handleAddToCart ou no event listener do catálogo)
+function addToCartWithToast(product) {
+  const existing = carrinho.find((p) => p.nome === product.nome);
+  if (existing) existing.quantidade++;
+  else carrinho.push({ ...product, quantidade: 1 });
+
+  atualizarCarrinho();
+  showToast(`${product.nome} adicionado ao carrinho!`);
+}
+
+setupFilters();
+setupSearch();
+loadProducts();
 atualizarCarrinho();
-renderizarCatalogo();

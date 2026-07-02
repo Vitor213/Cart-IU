@@ -88,6 +88,7 @@ header .icone-cart span {
   grid-template-rows: 70px 1fr 70px;
   transition: 0.5s;
 }
+
 .carrinho-compras .lista-itens h2 {
   font-weight: 500;
   font-size: large;
