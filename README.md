@@ -27,3 +27,11 @@ Uma **loja virtual moderna** com catálogo de produtos, carrinho completo e inte
 - Mobile-first
 
 ## 📁 Estrutura do Projeto
+Cart-IU/
+├── index.html
+├── script.js
+├── estilo/
+│   └── style.css
+├── img/
+├── js/ (futuro)
+└── Estruturas HTML/ (referências)
