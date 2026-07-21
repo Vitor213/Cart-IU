@@ -58,6 +58,8 @@ function salvarCarrinho() {
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
 }
 carregarCarrinho();
+// Garantir que o carrinho esteja fechado ao carregar a página
+body.classList.remove("show-cart");
 
 // Abrir e fechar carrinho
 verCarrinho.addEventListener("click", function () {
